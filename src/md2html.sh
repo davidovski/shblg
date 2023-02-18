@@ -8,7 +8,7 @@ _pre_emph () {
             printf "%s_" "${line%%\**}"
             line="${line#*\*}"
         done
-        printf "${line}\n"
+        printf "%s\n" "${line}"
     done
 }
 
@@ -25,7 +25,7 @@ _post_emph () {
             printf "%s${right}" "${line%%${wrong}*}"
             line="${line#*${wrong}}"
         done
-        printf "${line}\n"
+        printf "%s\n" "${line}"
     done
 }
 
@@ -82,7 +82,6 @@ _h () {
 #
 #   p
 _p () {
-    local num=$1
     empty=true
     while IFS= read -r line; do
         case "$line" in
@@ -109,15 +108,60 @@ _p () {
     }
 }
 
+# parse links
+#
+_a_img () {
+    local open="[" mid="](" close=")"
+    while IFS= read -r line; do
+                next="$line"
+                while [ "$next" != "${next#*$close}" ]; do
+                    before="${next%%$open*}"
+                    text=${next#*$open} text=${text%%$mid*}
+                    url=${next#*$mid} url=${url%%$close*}
+
+                    title=${url#* } url=${url%% *}
+
+                    [ "$title" != "$url" ] \
+                        && title=" title=$title" \
+                        || title=
+
+                    case "$before" in
+                        *!) h="%s<img src=\"%s\"%s alt=\"%s\"></img>" 
+                            before="${before%!}" ;;
+                        *) h="%s<a href=\"%s\"%s>%s</a>" ;;
+                    esac
+
+                    printf "$h" "$before" "$url" "$title" "$text"
+
+                    next="${next#*$close}"
+                done
+                printf "%s\n" "$next";
+    done
+}
+
+# parse unordered lists
+#
+_ul () {
+}
+
+# parse ordered lists
+#
+_ol () {
+}
+
+
 
 # convert the markdown from stdin into html
 #
 md2html () {
+
             _p \
             | _pre_emph \
             | _emph '__' "<strong>" "</strong>" \
             | _emph '_' "<em>" "</em>" \
+            | _emph '`' "<code>" "</code>" \
             | _post_emph \
+            | _a_img \
             | _h 6 \
             | _h 5 \
             | _h 4 \

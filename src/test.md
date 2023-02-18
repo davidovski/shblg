@@ -2,7 +2,10 @@
 
 This is *italics* this is **bold** this is ***both*** wow
 
-so hold tight
+click [here](http) for stuff and [over here](http12 "my title") for more
+
+![this is an image](httpsomething)
+
 this is a paragraph
 
 haha
