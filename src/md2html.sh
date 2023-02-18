@@ -56,6 +56,7 @@ _emph () {
 # parse heading
 #
 #   h [heading no.]
+#
 _h () {
     local num=$1
     while IFS= read -r line; do
@@ -80,12 +81,11 @@ _h () {
 
 # parse paragraphs
 #
-#   p
 _p () {
     empty=true
     while IFS= read -r line; do
         case "$line" in
-            "#"*)
+            "#"*|">"*|"``"*)
                 printf "%s\n" "$line"
                 ;;
             "") 
@@ -106,6 +106,11 @@ _p () {
     $empty || {
         printf "</p>\n"
     }
+}
+
+# parse ref-style links
+#
+_ref () {
 }
 
 # parse links
@@ -149,6 +154,15 @@ _ul () {
 _ol () {
 }
 
+# parse mutliline codeblocks
+#
+_code () {
+}
+
+# parse quotes
+#
+_quote () {
+}
 
 
 # convert the markdown from stdin into html
