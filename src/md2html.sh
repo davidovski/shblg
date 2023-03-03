@@ -85,14 +85,16 @@ _p () {
     empty=true
     while IFS= read -r line; do
         case "$line" in
-            "#"*|">"*|"``"*)
-                printf "%s\n" "$line"
+            "#"*|">"*|'``'*|'<'*'>'*)
+                $empty &&
+                    printf "%s\n" "$line"
                 ;;
             "") 
-                $empty ||
+                $empty || {
                     printf "</p>\n"
-                
-                empty=true ;;
+                    empty=true 
+                }
+                ;;
             *) 
                 $empty &&
                     printf "<p>%s " "$line" ||
@@ -250,10 +252,10 @@ _ol () {
 #
 md2html () {
 
-            _p \
-            | _pre_emph \
+            _pre_emph \
             | _ul \
             | _ol \
+            | _p \
             | _emph '__' "<strong>" "</strong>" \
             | _emph '_' "<em>" "</em>" \
             | _emph '`' "<code>" "</code>" \
