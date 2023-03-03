@@ -110,8 +110,8 @@ _p () {
 
 # parse ref-style links
 #
-_ref () {
-}
+#_ref () {
+#}
 
 # parse links
 #
@@ -144,25 +144,106 @@ _a_img () {
     done
 }
 
+
+_get_indent () {
+    indent=0
+    l="$*"
+    while [ "$l" ]; do
+        c="${l%*${l#?}}"
+        case "$c" in
+            " ") indent=$((indent+1)) ;;
+            *) 
+                l="${l#?}"
+                break 
+            ;;
+        esac
+        l="${l#?}"
+    done
+    printf "$indent"
+}
+
+
 # parse unordered lists
 #
 _ul () {
+    local list=false
+    local indent_level=0
+    while IFS= read -r line; do
+        set -- $line
+        case "$1" in 
+            "-"|"_"|"+")
+                indent=$(_get_indent "$line")
+
+                $list || {
+                    list=true
+                    printf "<ul>\n"
+                }
+
+                [ "$indent_level" -lt "$indent" ] \
+                    && printf "<ul>\n"
+                [ "$indent_level" -gt "$indent" ] \
+                    && printf "</ul>\n"
+                indent_level=$indent
+
+                printf "<li>%s</li>\n" "${line#*$1 }"
+                ;;
+            *) 
+                $list && {
+                    printf "</ul>"
+                    list=false
+                }
+                printf "%s\n" "$line"
+                ;;
+        esac
+    done
+    $list && printf "</ul>\n"
 }
 
 # parse ordered lists
 #
 _ol () {
+    local list=false
+    local indent_level=0
+    while IFS= read -r line; do
+        set -- $line
+        case "$1" in 
+            *.|*\))
+                indent=$(_get_indent "$line")
+
+                $list || {
+                    list=true
+                    printf "<ol>\n"
+                }
+
+                [ "$indent_level" -lt "$indent" ] \
+                    && printf "<ol>\n"
+                [ "$indent_level" -gt "$indent" ] \
+                    && printf "</ol>\n"
+                indent_level=$indent
+
+                printf "<li>%s</li>\n" "${line#*$1 }"
+                ;;
+            *) 
+                $list && {
+                    printf "</ol>"
+                    list=false
+                }
+                printf "%s\n" "$line"
+                ;;
+        esac
+    done
+    $list && printf "</ol>\n"
 }
 
 # parse mutliline codeblocks
 #
-_code () {
-}
+#_code () {
+#}
 
 # parse quotes
 #
-_quote () {
-}
+#_quote () {
+#}
 
 
 # convert the markdown from stdin into html
@@ -171,6 +252,8 @@ md2html () {
 
             _p \
             | _pre_emph \
+            | _ul \
+            | _ol \
             | _emph '__' "<strong>" "</strong>" \
             | _emph '_' "<em>" "</em>" \
             | _emph '`' "<code>" "</code>" \
