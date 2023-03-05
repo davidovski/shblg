@@ -1,9 +1,12 @@
 #!/bin/sh
 
+ESC_SEQ="ESCAPED!"
+
 # replace all * with _ for easier processing
 #
 _pre_emph () {
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n"" $line" && continue;; esac
         while [ "$line" != "${line%%\**}" ]; do
             printf "%s_" "${line%%\**}"
             line="${line#*\*}"
@@ -17,6 +20,7 @@ _pre_emph () {
 #
 _post_emph () {
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         # TODO: avoid this problem entirely?
 
         local wrong="</strong></em>" right="</em></strong>"
@@ -38,6 +42,7 @@ _emph () {
     local lefttag="$2" righttag="$3"
 
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         next="${line}"
         line=
         rightofbold=
@@ -60,6 +65,7 @@ _emph () {
 _h () {
     local num=$1
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         s=
 
         n=$num
@@ -82,9 +88,10 @@ _h () {
 # parse paragraphs
 #
 _p () {
-    empty=true
+    local empty=true
     while IFS= read -r line; do
         case "$line" in
+            "$ESC_SEQ"*) printf "%s\n" "$line" && continue;;
             "#"*|">"*|'``'*|'<'*'>'*)
                 $empty || {
                     printf "</p>\n"
@@ -123,6 +130,7 @@ _p () {
 _a_img () {
     local open="[" mid="](" close=")"
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
                 next="$line"
                 while [ "$next" != "${next#*$close}" ]; do
                     before="${next%%$open*}"
@@ -168,89 +176,128 @@ _get_indent () {
     printf "$indent"
 }
 
+# print a string x times
+#
+#   print_x x "string"
+print_x () {
+    x=$1; shift
+    until [ "$((x=x-1))" -lt "0" ]; do
+        printf "$*"
+    done
+}
+
 
 # parse unordered lists
 #
 _ul () {
-    local list=false
-    local indent_level=0
+    local indent_level=-1
+    local to_close=0
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         set -- $line
         case "$1" in 
             "-"|"_"|"+")
                 indent=$(_get_indent "$line")
 
-                $list || {
-                    list=true
+                [ "$indent_level" -lt "$indent" ] && {
                     printf "<ul>\n"
+                    to_close=$((to_close+1))
                 }
-
-                [ "$indent_level" -lt "$indent" ] \
-                    && printf "<ul>\n"
-                [ "$indent_level" -gt "$indent" ] \
-                    && printf "</ul>\n"
+                [ "$indent_level" -gt "$indent" ] && {
+                    printf "</ul>\n" 
+                    to_close=$((to_close-1))
+                }
                 indent_level=$indent
 
                 printf "<li>%s</li>\n" "${line#*$1 }"
                 ;;
             *) 
-                $list && {
-                    printf "</ul>"
-                    list=false
+                [ $to_close -gt 0 ] && {
+                    print_x $to_close "</ul>\n"
+                    to_close=0
+                    indent_level=-1
                 }
                 printf "%s\n" "$line"
                 ;;
         esac
     done
-    $list && printf "</ul>\n"
+    print_x $to_close "</ul>\n"
 }
 
 # parse ordered lists
 #
 _ol () {
-    local list=false
-    local indent_level=0
+    local indent_level=-1
+    local to_close=0
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         set -- $line
         case "$1" in 
             *.|*\))
                 indent=$(_get_indent "$line")
 
-                $list || {
-                    list=true
+                [ "$indent_level" -lt "$indent" ] && {
                     printf "<ol>\n"
+                    to_close=$((to_close+1))
                 }
-
-                [ "$indent_level" -lt "$indent" ] \
-                    && printf "<ol>\n"
-                [ "$indent_level" -gt "$indent" ] \
-                    && printf "</ol>\n"
+                [ "$indent_level" -gt "$indent" ] && {
+                    printf "</ol>\n" 
+                    to_close=$((to_close-1))
+                }
                 indent_level=$indent
 
                 printf "<li>%s</li>\n" "${line#*$1 }"
                 ;;
             *) 
-                $list && {
-                    printf "</ol>"
-                    list=false
+                [ $to_close -gt 0 ] && {
+                    print_x $to_close "</ol>\n"
+                    to_close=0
+                    indent_level=-1
                 }
                 printf "%s\n" "$line"
                 ;;
         esac
     done
-    $list && printf "</ol>\n"
+    print_x $to_close "</ol>\n"
 }
 
-# parse mutliline codeblocks
+# parse multiline codeblocks
 #
-#_code () {
-#}
+_code () {
+    local codeblock=false content=true
+    while IFS= read -r line; do
+        case "$line" in
+            "    "*)
+                $codeblock &&
+                    printf "%s\n" "$ESC_SEQ${line#    }" ||
+                    printf "%s\n" "$line"
+                $codeblock || $content || {
+                    printf "<pre><code>\n"
+                    codeblock=true
+                    printf "%s\n" "$ESC_SEQ${line#    }"
+                }
+                ;;
+            *)
+                $codeblock && {
+                    printf "</code></pre>\n"
+                    codeblock=false
+                }
+                printf "%s\n" "$line"
+                ;;
+        esac
+        case "$line" in
+            "") content=false ;;
+            *) content=true ;;
+        esac
+    done
+}
 
 # parse quotes
 #
 _blockquote () {
-    local level=0
+    local indent_level=0
     while IFS= read -r line; do
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         set - $line
         case "$1" in
             ">"*)
@@ -267,27 +314,35 @@ _blockquote () {
                     line="${line#?}"
                 done
 
-                [ "$indent" -gt "$level" ] &&
-                    printf "<blockquote>\n"
-                [ "$indent" -lt "$level" ] &&
-                    printf "</blockquote>\n"
-                level="$indent"
-                printf "%s\n" "$line"
+                print_x $((indent-indent_level)) "<blockquote>\n"
+                print_x $((indent_level-indent)) "</blockquote>\n"
+                indent_level=$indent
+                ;;
+        esac
+        printf "%s\n" "$line"
+    done
+    print_x $((indent_level)) "</blockquote>\n"
+}
+
+_post_escape () {
+    while IFS= read -r line; do
+        case "$line" in
+            "$ESC_SEQ"*)
+                printf "%s\n" "${line#$ESC_SEQ}"
                 ;;
             *)
                 printf "%s\n" "$line"
                 ;;
         esac
     done
-    [ "$indent" -lt "$level" ] &&
-        printf "</blockquote>\n"
 }
 
 _html () {
     printf "<!DOCTYPE html>\n"
-    cat
+    while IFS= read -r line; do
+        printf "%s\n" "$line"
+    done
 }
-
 
 # convert the markdown from stdin into html
 #
@@ -295,6 +350,7 @@ md2html () {
 
     # the order of these somewhat matters
             _pre_emph \
+            | _code \
             | _blockquote \
             | _ul \
             | _ol \
@@ -310,6 +366,7 @@ md2html () {
             | _h 3 \
             | _h 2 \
             | _h 1 \
+            | _post_escape \
             | _html
 }
 

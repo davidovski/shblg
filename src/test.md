@@ -18,7 +18,6 @@ ok that was a quote
 > 
 > and also there is another quote;
 >> Hi i am a quote 
->
 
 
 haha
@@ -27,6 +26,17 @@ haha
     - of items
     - please dont
 - break 
+
+ok
+
+    int main() {
+        printf("hello %s\n", "world");
+    }
+
+- list
+    - sublist
+        - subsublist
+            - subsubsublist
 
 
 * star list
@@ -40,4 +50,4 @@ haha
 3. lOL
 
 
-ok that worked?
+> ok that worked?
