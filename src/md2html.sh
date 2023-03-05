@@ -1,12 +1,12 @@
 #!/bin/sh
 
-ESC_SEQ="ESCAPED!"
+ESC_SEQ='\0'
 
 # replace all * with _ for easier processing
 #
 _pre_emph () {
     while IFS= read -r line; do
-        case "$line" in "$ESC_SEQ"*) printf "%s\n"" $line" && continue;; esac
+        case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         while [ "$line" != "${line%%\**}" ]; do
             printf "%s_" "${line%%\**}"
             line="${line#*\*}"
@@ -131,29 +131,29 @@ _a_img () {
     local open="[" mid="](" close=")"
     while IFS= read -r line; do
         case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
-                next="$line"
-                while [ "$next" != "${next#*$close}" ]; do
-                    before="${next%%$open*}"
-                    text=${next#*$open} text=${text%%$mid*}
-                    url=${next#*$mid} url=${url%%$close*}
+        next="$line"
+        while [ "$next" != "${next#*$close}" ]; do
+            before="${next%%$open*}"
+            text=${next#*$open} text=${text%%$mid*}
+            url=${next#*$mid} url=${url%%$close*}
 
-                    title=${url#* } url=${url%% *}
+            title=${url#* } url=${url%% *}
 
-                    [ "$title" != "$url" ] \
-                        && title=" title=$title" \
-                        || title=
+            [ "$title" != "$url" ] \
+                && title=" title=$title" \
+                || title=
 
-                    case "$before" in
-                        *!) h="%s<img src=\"%s\"%s alt=\"%s\"></img>" 
-                            before="${before%!}" ;;
-                        *) h="%s<a href=\"%s\"%s>%s</a>" ;;
-                    esac
+            case "$before" in
+                *!) h="%s<img src=\"%s\"%s alt=\"%s\"></img>" 
+                    before="${before%!}" ;;
+                *) h="%s<a href=\"%s\"%s>%s</a>" ;;
+            esac
 
-                    printf "$h" "$before" "$url" "$title" "$text"
+            printf "$h" "$before" "$url" "$title" "$text"
 
-                    next="${next#*$close}"
-                done
-                printf "%s\n" "$next";
+            next="${next#*$close}"
+        done
+        printf "%s\n" "$next";
     done
 }
 
@@ -270,8 +270,7 @@ _code () {
             "    "*)
                 $codeblock &&
                     printf "%s\n" "$ESC_SEQ${line#    }" ||
-                    printf "%s\n" "$line"
-                $codeblock || $content || {
+                $content || {
                     printf "<pre><code>\n"
                     codeblock=true
                     printf "%s\n" "$ESC_SEQ${line#    }"
@@ -328,7 +327,7 @@ _post_escape () {
     while IFS= read -r line; do
         case "$line" in
             "$ESC_SEQ"*)
-                printf "%s\n" "${line#$ESC_SEQ}"
+                printf "%s\n" "${line#??}"
                 ;;
             *)
                 printf "%s\n" "$line"
