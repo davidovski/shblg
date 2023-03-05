@@ -8,6 +8,19 @@ click [here](http) for stuff and [over here](http12 "my title") for more
 
 this is a paragraph
 
+> this is a quote hi
+
+ok that was a quote
+
+> this quote has a list inside i
+> - this is a list in a quote
+> - it was quoted
+> 
+> and also there is another quote;
+>> Hi i am a quote 
+>
+
+
 haha
 
 - this is a list

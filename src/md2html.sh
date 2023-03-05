@@ -86,8 +86,11 @@ _p () {
     while IFS= read -r line; do
         case "$line" in
             "#"*|">"*|'``'*|'<'*'>'*)
-                $empty &&
-                    printf "%s\n" "$line"
+                $empty || {
+                    printf "</p>\n"
+                    empty=true 
+                }
+                printf "%s\n" "$line"
                 ;;
             "") 
                 $empty || {
@@ -97,8 +100,8 @@ _p () {
                 ;;
             *) 
                 $empty &&
-                    printf "<p>%s " "$line" ||
-                    printf "%s " "$line"
+                    printf "<p>\n%s\n " "$line" ||
+                    printf "%s\n " "$line"
 
                 empty=false ;;
         esac
@@ -146,7 +149,8 @@ _a_img () {
     done
 }
 
-
+# get indentation level of a line
+#
 _get_indent () {
     indent=0
     l="$*"
@@ -244,15 +248,54 @@ _ol () {
 
 # parse quotes
 #
-#_quote () {
-#}
+_blockquote () {
+    local level=0
+    while IFS= read -r line; do
+        set - $line
+        case "$1" in
+            ">"*)
+                indent=0
+                while [ "$line" ]; do
+                    c="${line%*${line#?}}"
+                    case "$c" in
+                        ">") indent=$((indent+1)) ;;
+                        " "*) 
+                            line="${line#?}"
+                            break
+                        ;;
+                    esac
+                    line="${line#?}"
+                done
+
+                [ "$indent" -gt "$level" ] &&
+                    printf "<blockquote>\n"
+                [ "$indent" -lt "$level" ] &&
+                    printf "</blockquote>\n"
+                level="$indent"
+                printf "%s\n" "$line"
+                ;;
+            *)
+                printf "%s\n" "$line"
+                ;;
+        esac
+    done
+    [ "$indent" -lt "$level" ] &&
+        printf "</blockquote>\n"
+}
+
+_html () {
+    printf "<!DOCTYPE html>\n"
+    cat
+}
 
 
 # convert the markdown from stdin into html
 #
 md2html () {
 
+    # the order of these somewhat matters
             _pre_emph \
+            | _blockquote \
             | _ul \
             | _ol \
             | _p \
@@ -266,7 +309,8 @@ md2html () {
             | _h 4 \
             | _h 3 \
             | _h 2 \
-            | _h 1 
+            | _h 1 \
+            | _html
 }
 
 md2html
