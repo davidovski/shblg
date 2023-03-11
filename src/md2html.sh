@@ -14,7 +14,7 @@ _pre_strip () {
             while [ "$l" != "${l#?}" ]; do
                 c="${l%*"${l#?}"}"
                 case "$c" in
-                    "	") line="$line    ";;
+                    "    ") line="$line    ";;
                     *) line="$line$c" ;;
                 esac
                 l="${l#?}"
@@ -311,7 +311,7 @@ _code () {
                     codeblock=true
                 }
                 ;;
-            "") 
+            "")
                 $codeblock \
                     && printf "\n%s" "$ESC_SEQ" \
                     || printf "\n"
@@ -321,6 +321,7 @@ _code () {
                     printf "</code></pre>\n"
                     codeblock=false
                 }
+
                 printf "%s\n" "$line"
                 ;;
         esac
@@ -385,14 +386,13 @@ _squash () {
                 ;;
         esac
     done
-	printf "\n"
+    printf "\n"
 }
 
 
 # convert the markdown from stdin into html
 #
 md2html () {
-
     # the order of these somewhat matters
             _pre_strip \
             | _code \
@@ -414,10 +414,6 @@ md2html () {
             | _h 1 \
             | _squash \
             | _html
-			
-			cat > /dev/null << EOF
-EOF
 }
 
 md2html
-
