@@ -1,18 +1,22 @@
 # This is a test md file hello
 
-This is *italics* this is **bold** this is ***both*** wow
+This is *italics* this is **bold** this is ***both*** wow (this is in brackets ssh) and [this is in square brackets not a anchor lol]
 
 click [here](http) for stuff and [over here](http12 "my title") for more
+
+and [click here](http://this_has_stuffinside) too
 
 ![this is an image](httpsomething)
 
 this is a paragraph
+with many lines
+that are joined together
 
 > this is a quote hi
 
 ok that was a quote
 
-> this quote has a list inside i
+> this quote has a list inside it
 > - this is a list in a quote
 > - it was quoted
 > 
@@ -29,8 +33,12 @@ haha
 
 ok
 
-    int main() {
-        printf("hello %s\n", "world");
+	int main() {
+		printf("hello %s\n", "world");
+	}
+
+    int func(int* a) {
+		return a;
     }
 
 - list
@@ -44,10 +52,10 @@ ok
 
 + plus now wow
 + plus wow so cool
-
+        
 1. hello
 2. world
 3. lOL
-
+    
 
 > ok that worked?

@@ -2,6 +2,29 @@
 
 ESC_SEQ='\0'
 
+# remove traling whitespace from empty lines
+#
+_pre_strip () {
+    while IFS= read -r line; do
+        set -- $line
+        [ "$*" ] && {
+            local l c
+            l="$line"
+            line=
+            while [ "$l" != "${l#?}" ]; do
+                c="${l%*"${l#?}"}"
+                case "$c" in
+                    "	") line="$line    ";;
+                    *) line="$line$c" ;;
+                esac
+                l="${l#?}"
+            done
+
+            printf "%s\n" "$line"
+        } || printf "\n"
+    done
+}
+
 # replace all * with _ for easier processing
 #
 _pre_emph () {
@@ -107,8 +130,8 @@ _p () {
                 ;;
             *) 
                 $empty &&
-                    printf "<p>\n%s\n " "$line" ||
-                    printf "%s\n " "$line"
+                    printf "<p>\n%s\n" "$line" ||
+                    printf "%s\n" "$line"
 
                 empty=false ;;
         esac
@@ -133,6 +156,10 @@ _a_img () {
         case "$line" in "$ESC_SEQ"*) printf "%s\n" "$line" && continue;; esac
         next="$line"
         while [ "$next" != "${next#*$close}" ]; do
+            case "$next" in
+                *"["*"]("*")"*);;
+                *) break;
+            esac
             before="${next%%$open*}"
             text=${next#*$open} text=${text%%$mid*}
             url=${next#*$mid} url=${url%%$close*}
@@ -144,12 +171,12 @@ _a_img () {
                 || title=
 
             case "$before" in
-                *!) h="%s<img src=\"%s\"%s alt=\"%s\"></img>" 
+                *!) h="%s\n%s<img src=\"%s\"%s alt=\"%s\"></img>\n" 
                     before="${before%!}" ;;
-                *) h="%s<a href=\"%s\"%s>%s</a>" ;;
+                *) h="%s\n%s<a href=\"%s\"%s>\n%s</a>\n" ;;
             esac
 
-            printf "$h" "$before" "$url" "$title" "$text"
+            printf "$h" "$before" "$ESC_SEQ" "$url" "$title" "$text"
 
             next="${next#*$close}"
         done
@@ -163,7 +190,7 @@ _get_indent () {
     indent=0
     l="$*"
     while [ "$l" ]; do
-        c="${l%*${l#?}}"
+        c="${l%*"${l#?}"}"
         case "$c" in
             " ") indent=$((indent+1)) ;;
             *) 
@@ -261,6 +288,14 @@ _ol () {
     print_x $to_close "</ol>\n"
 }
 
+# parse inline codeblocks
+#
+_inline_code () {
+    _emph '`' "
+$ESC_SEQ<code>" "</code>
+"
+}
+
 # parse multiline codeblocks
 #
 _code () {
@@ -268,14 +303,19 @@ _code () {
     while IFS= read -r line; do
         case "$line" in
             "    "*)
+                # prefix lines with newline to avoid trailing newline
                 $codeblock &&
-                    printf "%s\n" "$ESC_SEQ${line#    }" ||
+                    printf "\n%s" "$ESC_SEQ${line#    }" ||
                 $content || {
-                    printf "<pre><code>\n"
+                    printf "%s<pre><code>%s" "$ESC_SEQ" "${line#    }"
                     codeblock=true
-                    printf "%s\n" "$ESC_SEQ${line#    }"
                 }
                 ;;
+            "") 
+                $codeblock \
+                    && printf "\n%s" "$ESC_SEQ" \
+                    || printf "\n"
+                    ;;
             *)
                 $codeblock && {
                     printf "</code></pre>\n"
@@ -323,19 +363,8 @@ _blockquote () {
     print_x $((indent_level)) "</blockquote>\n"
 }
 
-_post_escape () {
-    while IFS= read -r line; do
-        case "$line" in
-            "$ESC_SEQ"*)
-                printf "%s\n" "${line#??}"
-                ;;
-            *)
-                printf "%s\n" "$line"
-                ;;
-        esac
-    done
-}
-
+# add html header
+#
 _html () {
     printf "<!DOCTYPE html>\n"
     while IFS= read -r line; do
@@ -343,30 +372,51 @@ _html () {
     done
 }
 
+# remove all unecessary newlines 
+# 
+_squash () {
+    while IFS= read -r line; do
+        case "$line" in
+            "$ESC_SEQ"*)
+                printf "\n%s" "${line#??}"
+                ;;
+            *)
+                printf "%s" "$line"
+                ;;
+        esac
+    done
+	printf "\n"
+}
+
+
 # convert the markdown from stdin into html
 #
 md2html () {
 
     # the order of these somewhat matters
-            _pre_emph \
+            _pre_strip \
             | _code \
+            | _pre_emph \
             | _blockquote \
             | _ul \
             | _ol \
             | _p \
+            | _a_img \
+            | _inline_code \
             | _emph '__' "<strong>" "</strong>" \
             | _emph '_' "<em>" "</em>" \
-            | _emph '`' "<code>" "</code>" \
             | _post_emph \
-            | _a_img \
             | _h 6 \
             | _h 5 \
             | _h 4 \
             | _h 3 \
             | _h 2 \
             | _h 1 \
-            | _post_escape \
+            | _squash \
             | _html
+			
+			cat > /dev/null << EOF
+EOF
 }
 
 md2html
