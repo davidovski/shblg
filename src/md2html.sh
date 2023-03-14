@@ -394,26 +394,26 @@ _squash () {
 #
 md2html () {
     # the order of these somewhat matters
-            _pre_strip \
-            | _code \
-            | _pre_emph \
-            | _blockquote \
-            | _ul \
-            | _ol \
-            | _p \
-            | _a_img \
-            | _inline_code \
-            | _emph '__' "<strong>" "</strong>" \
-            | _emph '_' "<em>" "</em>" \
-            | _post_emph \
-            | _h 6 \
-            | _h 5 \
-            | _h 4 \
-            | _h 3 \
-            | _h 2 \
-            | _h 1 \
-            | _squash \
-            | _html
+    _pre_strip \
+    | _code \
+    | _pre_emph \
+    | _blockquote \
+    | _ul \
+    | _ol \
+    | _p \
+    | _a_img \
+    | _inline_code \
+    | _emph '__' "<strong>" "</strong>" \
+    | _emph '_' "<em>" "</em>" \
+    | _post_emph \
+    | _h 6 \
+    | _h 5 \
+    | _h 4 \
+    | _h 3 \
+    | _h 2 \
+    | _h 1 \
+    | _squash \
+    | _html
 }
 
 md2html
