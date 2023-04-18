@@ -1,4 +1,23 @@
 #!/bin/sh
 
-BLOG_DIR
-OUTPUT_DIR
+INPUT_DIR=blog
+OUTPUT_DIR=dist
+PAGE_TEMPLATE=blog/template.html
+
+while getopts ":o:i:t:" opt; do
+    case "$opt" in
+        o)
+            OUTPUT_DIR=$(realpath $OPTARG)
+            ;;
+        i)
+            INPUT_DIR=$(realpath $OPTARG)
+            ;;
+        t)
+            PAGE_TEMPLATE=$(realpath $OPTARG)
+            ;;
+    esac
+done
+
+for f in ${INPUT_DIR}/*.md; do
+        md2html "$f" > ${OUTPUT_DIR}/$f
+done

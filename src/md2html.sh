@@ -2,6 +2,10 @@
 
 ESC_SEQ='\0'
 
+cat () {
+    while IFS= read -r line; do printf "%s\n" "$line"; done < "$1"
+}
+
 # remove traling whitespace from empty lines
 #
 _pre_strip () {
@@ -135,7 +139,6 @@ _p () {
 
                 empty=false ;;
         esac
-
     done
 
     $empty || {
@@ -393,7 +396,6 @@ _squash () {
 # convert the markdown from stdin into html
 #
 md2html () {
-    # the order of these somewhat matters
     _pre_strip \
     | _code \
     | _pre_emph \
@@ -416,4 +418,6 @@ md2html () {
     | _html
 }
 
-md2html
+[ -z "$*" ] \
+    && md2html \
+    || cat $1 | md2html
