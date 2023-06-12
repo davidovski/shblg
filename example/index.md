@@ -1,3 +1,5 @@
+#!/usr/bin/env md2html
+
 # This is a test md file hello
 
 This is *italics* this is **bold** this is ***both*** wow (this is in brackets ssh) and [this is in square brackets not a anchor lol]

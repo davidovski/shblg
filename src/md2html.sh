@@ -6,6 +6,19 @@ cat () {
     while IFS= read -r line; do printf "%s\n" "$line"; done < "$1"
 }
 
+# remove a shebang from the start of the file
+_remove_shebang () {
+    IFS= read -r line
+    case "$line" in
+        "#!"*) ;;
+        *) printf "%s\n" "$line"
+    esac
+
+    while IFS= read -r line; do
+        printf "%s\n" "$line"
+    done
+}
+
 # remove traling whitespace from empty lines
 #
 _pre_strip () {
@@ -396,7 +409,8 @@ _squash () {
 # convert the markdown from stdin into html
 #
 md2html () {
-    _pre_strip \
+    _remove_shebang \
+    | _pre_strip \
     | _code \
     | _pre_emph \
     | _blockquote \
@@ -414,8 +428,7 @@ md2html () {
     | _h 3 \
     | _h 2 \
     | _h 1 \
-    | _squash \
-    | _html
+    | _squash
 }
 
 [ -z "$*" ] \
