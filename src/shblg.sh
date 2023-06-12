@@ -26,6 +26,8 @@ process () {
     dirpath="${1%${1##*/}}"
     out_file="${OUTPUT_DIR}${path}"
 
+    printf "%s ...\n" "$path"
+
     [ -d "$1" ] && {
         mkdir -p "$out_file"
         for f in "$1"/*; do
@@ -35,12 +37,12 @@ process () {
     } || [ -x "$1" ] && {
         # execute the file
         cd $dirpath
-        "$1" > "${out_file%.*}.html"
+        "$1" > "${out_file}"
         cd -
         return 0
     } || {
-        # just output the file as is
-        while IFS= read -r line; do printf "%s\n" "$line"; done < "$1" > "$out_file"
+        # just copy the file as is
+        cp "$1" "$out_file"
         return 0
     }
 }
