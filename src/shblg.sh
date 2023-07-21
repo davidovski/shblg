@@ -2,9 +2,13 @@
 
 INPUT_DIR=blog
 OUTPUT_DIR=dist
-PAGE_TEMPLATE=blog/template.html
 
-while getopts ":o:i:t:" opt; do
+usage () {
+    printf "%s\n" "Usage: shblg [-i input_dir] [-o output_dir]"
+    exit 1
+}
+
+while getopts ":o:i:h" opt; do
     case "$opt" in
         o)
             OUTPUT_DIR=$OPTARG/
@@ -14,8 +18,8 @@ while getopts ":o:i:t:" opt; do
         i)
             INPUT_DIR=$(realpath $OPTARG)
             ;;
-        t)
-            PAGE_TEMPLATE=$(realpath $OPTARG)
+        h)
+            usage
             ;;
     esac
 done
