@@ -433,4 +433,4 @@ md2html () {
 
 [ -z "$*" ] \
     && md2html \
-    || cat $1 | md2html
+    || cat "$1" | md2html
