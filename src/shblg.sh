@@ -11,6 +11,7 @@ usage () {
 # check if a file has changed since last generating
 #
 newer () {
+    # TODO account for dependencies that have change
     [ ! -e "$2" ] || [ "$1" -nt "$2" ]
 }
 
