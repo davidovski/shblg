@@ -8,6 +8,12 @@ usage () {
     exit 1
 }
 
+# check if a file has changed since last generating
+#
+newer () {
+    [ ! -e "$2" ] || [ "$1" -nt "$2" ]
+}
+
 while getopts ":o:i:h" opt; do
     case "$opt" in
         o)
@@ -29,22 +35,29 @@ process () {
     dirpath="${1%"${1##*/}"}"
     out_file="${OUTPUT_DIR}${path}"
 
-    printf "%s ...\n" "$path"
 
     [ -d "$1" ] && {
+
         mkdir -p "$out_file"
         for f in "$1"/*; do
             process "$f"
         done
+
         return 0
-    } || [ -x "$1" ] && (
-        # execute the file
-        cd "$dirpath"
-        "$1" > "${out_file}"
+    } || [ -x "$1" ] && {
+        newer "$1" "$out_file" && (
+                # execute the file
+                cd $dirpath
+                printf "#!%s\n" "$path"
+                "$1" > "$out_file"
+            )
         return 0
-    ) || {
-        # just copy the file as is
-        cp "$1" "$out_file"
+    } || {
+        newer "$1" "$out_file" && (
+            # just copy the file as is
+            printf "%s\n" "$path"
+            cp "$1" "$out_file"
+        )
         return 0
     }
 }
